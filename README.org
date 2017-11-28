@@ -12,14 +12,16 @@ A server to annotate and provide computer vision datasets
 
 * Table of Contents                                            :noexport:TOC:
 - [[#getting-started][Getting Started]]
-  - [[#cassandra-docker][Cassandra docker]]
+  - [[#running-cassandra-db-in-a-docker-container-recomended][Running cassandra db in a docker container (recomended)]]
   - [[#annotator-supreme-in-docker-container][Annotator Supreme in docker container]]
+- [[#extra][Extra]]
+  - [[#connecting-to-a-local-cassandra-database][Connecting to a local Cassandra database]]
 
 * Getting Started  
 
 Supreme annotator uses a Cassandra database to store the datasets.
 
-** Cassandra docker 
+** Running cassandra db in a docker container (recomended) 
 
 Get the cassandra docker ( [[https://hub.docker.com/_/cassandra/]] )
 
@@ -105,13 +107,11 @@ echo $CLUSTER_IP
 
 Start the annotator container passing the IP of the other container. 
 #+begin_src sh :results output :exports code :var CLUSTER_IP=clusterIP
-echo $CLUSTER_IP
 docker run -d --env CLUSTER_IP=$CLUSTER_IP -p 80:80 \
        --add-host=cassandraDB:$CLUSTER_IP annotator_supreme
 #+end_src
 
 #+RESULTS:
-: 172.17.0.2
 : 789551a62e2b203b1ca698f7db8331bbbef07e1a11f91b11bd5b8dc4e348cb30
 
 If everything works as expected annotator is serving at [[http://localhost/annotator-supreme/]]
@@ -135,3 +135,16 @@ Stat ngnix manually and the annotator api manually
 #+begin_src sh :results output :exports both
 root@1b8621841d27:/code# /usr/local/nginx/sbin/nginx & python3 run_api.py
 #+end_src
+
+
+* Extra
+** Connecting to a local Cassandra database
+
+Alternatively it is possible to run connect to a cassandra database running natively on the host.
+
+To connect the app to a Cassandra database running you have to run the container on the =host= network [[https://docs.docker.com/engine/reference/run/#network-settings]]
+
+#+begin_src sh :results output :exports both
+docker run -d --network="host" annotator_supreme
+#+end_src
+
