@@ -21,7 +21,8 @@ Supreme annotator uses a Cassandra database to store the datasets.
 
 ** Cassandra docker 
 
-Get the cassandra docker
+Get the cassandra docker ( [[https://hub.docker.com/_/cassandra/]] )
+
 #+begin_src sh :results output :exports code
 docker pull cassandra 
 #+end_src
@@ -92,15 +93,45 @@ Successfully tagged annotator_supreme:latest
 
 *** Starting the container for annotating 
 
-#+begin_src sh :results output :exports code
-docker run -d --env CLUSTER_IP=172.17.0.2 -p 80:80 \
-       --add-host=cassandraDB:172.17.0.2 annotator_supreme
+Get the IP address of the running cassandra container.
+#+NAME: clusterIP
+#+begin_src sh :results output :exports both 
+CLUSTER_IP=$(docker inspect --format='{{ .NetworkSettings.IPAddress }}' cassandraDB)
+echo $CLUSTER_IP
+#+end_src
+
+#+RESULTS: clusterIP
+: 172.17.0.2
+
+Start the annotator container passing the IP of the other container. 
+#+begin_src sh :results output :exports code :var CLUSTER_IP=clusterIP
+echo $CLUSTER_IP
+docker run -d --env CLUSTER_IP=$CLUSTER_IP -p 80:80 \
+       --add-host=cassandraDB:$CLUSTER_IP annotator_supreme
 #+end_src
 
 #+RESULTS:
-: 1f8cae6b18d0daf6650863bd2fe85f6a53fcedcfd48c95fa40bda39bb99d274b
+: 172.17.0.2
+: 789551a62e2b203b1ca698f7db8331bbbef07e1a11f91b11bd5b8dc4e348cb30
 
 If everything works as expected annotator is serving at [[http://localhost/annotator-supreme/]]
 
-*** TODO Starting for Development
+*** Starting for Development 
 
+You can mount a volume with your code directory into the container.
+By appending the =bash= command to the docker run, neither the application nor the nginx webserver will start.
+#+begin_src sh :results output :exports both :var CLUSTER_IP=clusterIP
+docker run -itd --name AnnotatorDEV \
+       -v $HOME/Projects/annotator-supreme:/home \
+       --env CLUSTER_IP=$CLUSTER_IP \
+       -p 80:80 \
+       --add-host=cassandraDB:172.17.0.2 annotator_supreme bash
+#+end_src
+
+#+RESULTS:
+: 1b8621841d271464ee7c27ff79c920617904089fe3218d45478dd46bc52f0bb5
+
+Stat ngnix manually and the annotator api manually
+#+begin_src sh :results output :exports both
+root@1b8621841d27:/code# /usr/local/nginx/sbin/nginx & python3 run_api.py
+#+end_src
